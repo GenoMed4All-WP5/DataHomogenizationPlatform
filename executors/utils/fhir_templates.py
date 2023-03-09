@@ -57,3 +57,81 @@ fhir_media_template = {
     "creation": "2009-09-03"
   }
 }
+
+fhir_patient_template = {
+            "resourceType": "Patient",
+            "identifier": [
+                {
+                    "use": "official",
+                    "type": {
+                        "coding": [
+                            {
+                                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                                "code": "PI"
+                            }
+                        ]
+                    },
+                    "system": "urn:oid:2.16.840.1.113883.2.9.3.12.4.1",
+                    "period": {
+                        "start": "1899-12-31T00:00:00+01:00"
+                    },
+                    "assigner": {
+                        "display": "organization"
+                    }
+                }
+            ],
+            "managingOrganization": {
+                "reference": "Organization"
+            }
+        }
+
+fhir_organization_template = {
+            "resourceType": "Organization",
+            "type": [
+                {
+                    "coding": [
+                        {
+                            "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                            "code": "prov",
+                            "display": "Healthcare Provider"
+                        }
+                    ]
+                }
+            ]
+        }
+
+
+
+'''data = {
+            "resourceType": "Patient",
+            "id": id,
+            "meta": {
+                "id": str(id),
+                "lastUpdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            },
+            "identifier": [
+                {
+                    "use": "official",
+                    "type": {
+                        "coding": [
+                            {
+                                "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                                "code": "PI"
+                            }
+                        ]
+                    },
+                    "system": "urn:oid:2.16.840.1.113883.2.9.3.12.4.1",
+                    "value": input_data["patient_id"],
+                    "period": {
+                        "start": "1899-12-31T00:00:00+01:00"
+                    },
+                    "assigner": {
+                        "display": self.config.get("GENOMED4ALL").get("organization")
+                    }
+                }
+            ],
+            "gender": self.translate_gender(input_data["patient_gender"]),
+            "managingOrganization": {
+                "reference": "Organization/" + str(organization_id)
+            }
+        }'''

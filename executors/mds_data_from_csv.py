@@ -1,35 +1,50 @@
-import traceback
-from datetime import datetime
-
 import orjson
+import traceback
 import uuid
-from abstracts.AbstractMapper import AMapper
 
 from fhir.resources.diagnosticreport import DiagnosticReport
 from fhir.resources.observation import Observation
 from fhir.resources.patient import Patient
+from datetime import datetime
 
-from extensions.Genomed4All.executors.utils.observation import Observation as Obs
+from inputconnectors.FHIRConnection import FHIRConnection
+from customdataobjects import fhir_queries
+
+from abstracts.AbstractMapper import AMapper
+from extensions.DataHomogenizationPlatform.executors.utils.observation import Observation as Obs
+from extensions.DataHomogenizationPlatform.mapping_tables.mds_mock_data_map_columns import mapping
+from extensions.DataHomogenizationPlatform.executors.utils.fhir_templates import *
+from customdataobjects import mapper_response
+from pipeline import Constants
 
 
 class mds_data_from_csv(AMapper):
     exists_index = None
-    '''esConn = None'''
+    fhir_conn = None
 
     def __init__(self, config):
         self.config = config
-        '''if self.esConn is None:
-            self.esConn = ELKConnection()
-            context = {"curl": config["ourl"]}
-            self.esConn.connect(context)'''
+        self.fhir_conn = FHIRConnection(config)
 
-    def execute(self, item):
+    def execute(self, blockdata):
         output = []
 
-        for each in item:
-            data = self.process_item(each)
-            output.extend(data)
-        return output
+        if type(blockdata) is list:
+            for each in blockdata:
+                data = self.process_item(each)
+                output.extend(data)
+        else:
+            output = self.process_item(blockdata)
+
+        return mapper_response.MapperResponse(data=output, metrics=mapper_response.BlockMetrics(0))
+        # return mapper_response.MapperResponse(data=output)
+        # return output
+        # return output[0]
+
+        # return mapper_response.MapperResponse(data=output[0], metrics=mapper_response.BlockMetrics(0))
+        # return mapper_response.MapperResponse(data=output)
+        # return [output]
+        # return output
 
     def process_item(self, item):
         output = []
@@ -40,7 +55,9 @@ class mds_data_from_csv(AMapper):
         outcome_data = self.get_outcome_data(item)
         oncogenetic_data = self.get_oncogenetics_data(item)
 
-        patient_id = self.create_patient(output, demographics_data)
+        organization_id = self.create_organization(output)
+        patient_id = self.create_patient(output, demographics_data, organization_id)
+        diagnostic_report_id = self.create_diagnostic_report(output, clinical_and_hematological_data, patient_id)
         #self.create_observations(output, clinical_and_hematological_data, demographics_data)
         self.create_observations(output, oncogenetic_data, patient_id)
         self.create_diagnostic_report(output, clinical_and_hematological_data, patient_id)
@@ -55,34 +72,78 @@ class mds_data_from_csv(AMapper):
         else:
             return "other"
 
-    def create_patient(self, output, input_data):
-        id = str(uuid.uuid4())
-        data = {
-                "resourceType": "Patient",
-                "id": id,
-                "meta": {
-                    "id": str(id),
-                    "lastUpdated": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-                },
-                "identifier": [
-                    {
-                        "system": "http://genomed4All.com",
-                        "value": input_data["patient_id"]
-                    }
-                ],
-                "gender": self.translate_gender(input_data["patient_gender"]),
-            }
+    def create_organization(self, output):
+        search_parameters = []
+        search_list = []
 
-        patient = Patient(**data)
+        organization_name = self.config.get("GENOMED4ALL").get("organization")
 
-        try:
-            patient_json = self.add_index_and_type(patient, "patient")
-        except:
-            traceback.print_exc()
+        organization_parameter = fhir_queries.fhirSearchParameter(search_parameter="name", value=organization_name)
+        search_parameters.append(organization_parameter)
 
-        output.append(patient_json)
+        search_object = fhir_queries.fhirSearch(resource="Organization", parameters=search_parameters)
+        search_list.append(search_object)
+
+        responses = self.fhir_conn.execute_query(search_list)
+
+        if len(responses) > 0 and responses[0].get("total") > 0:
+            id = responses[0].get("entry")[0].get("resource").get("id")
+        else:
+            id, organization_json = self.create_fhir_organization(organization_name)
+
+            output.append(organization_json)
 
         return id
+
+    def create_fhir_organization(self, input_data):
+        id = self.config.get("GENOMED4ALL").get("organization")
+        organization_template = fhir_organization_template
+
+        organization_template["id"] = id
+        organization_template["name"] = id
+        return id, organization_template
+
+    def create_patient(self, output, input_data, organization_id):
+        #TODO search if the patient already exists in the FHIR Server
+        patient_id = input_data["patient_id"]
+        search_parameters = []
+        search_list = []
+
+        patient_parameter = fhir_queries.fhirSearchParameter(search_parameter="identifier", value=patient_id)
+        search_parameters.append(patient_parameter)
+
+        search_object = fhir_queries.fhirSearch(resource="Patient", parameters=search_parameters)
+        search_list.append(search_object)
+
+        responses = self.fhir_conn.execute_query(search_list)
+
+        if len(responses) > 0 and responses[0].get("total") > 0:
+            id = responses[0].get("entry")[0].get("resource").get("id")
+        else:
+            id, patient_json = self.create_fhir_patient(input_data, organization_id)
+
+            output.append(patient_json)
+
+        return id
+
+    def create_fhir_patient(self, input_data, organization_id):
+        id = input_data["patient_id"]
+        patient_data = fhir_patient_template
+
+        patient_data["id"] = id
+
+        patient_data["identifier"][0]["value"] = id
+        patient_data["identifier"][0]["assigner"]["display"] = self.config.get("GENOMED4ALL").get("organization")
+
+        patient_data["gender"] = self.translate_gender(input_data["patient_gender"])
+        patient_data["managingOrganization"]["reference"] = self.config.get("GENOMED4ALL").get("organization")
+
+        patient = Patient(**patient_data)
+        try:
+            patient_json = orjson.loads(patient.json())
+        except:
+            traceback.print_exc()
+        return id, patient_json
 
     def create_specimen(self, output, input_data):
         data = {
@@ -213,8 +274,9 @@ class mds_data_from_csv(AMapper):
         # only for ELK Output connector
         fhir_resource_json = orjson.loads(fhir_resource_data.json())
         if self.config.get("OUT").get("otype") == "ELK":
-            fhir_resource_json["_index"] = self.config.get("GENOMED4ALL").get("tenant") + "-" + fhir_resource_type
-            fhir_resource_json["_odoctype"] = "_doc"
+            pass
+            #fhir_resource_json["_index"] = self.config.get("GENOMED4ALL").get("tenant") + "-" + fhir_resource_type
+            #fhir_resource_json["_odoctype"] = "_doc"
         return fhir_resource_json
 
     def create_diagnostic_report(self, output, clinical_and_hematological_data, patient_id):
@@ -282,8 +344,6 @@ class mds_data_from_csv(AMapper):
                 output.append(diagnostic_json)
             except:
                 traceback.print_exc()
-
-
         return output
 
     def get_demographics_data(self, item):
@@ -504,7 +564,6 @@ class mds_data_from_csv(AMapper):
     def get_oncogenetics_data(self, item):
         oncogenetics_data = {}
 
-        from extensions.Genomed4All.mapping_tables.mds_mock_data_map_columns import mapping
         oncogenetics_columns = dict(filter(lambda x: (x[1]["type"]) == "oncogenetics", mapping.items()))
         for key, value in oncogenetics_columns.items():
             try:

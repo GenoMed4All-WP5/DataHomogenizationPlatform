@@ -16,7 +16,7 @@ from fhir.resources.identifier import Identifier
 
 import uuid
 from datetime import datetime
-from extensions.genomed4all.executors.utils.fhir_templates import *
+from extensions.DataHomogenizationPlatform.executors.utils.fhir_templates import *
 import pydicom
 from dateutil.parser import parse
 
