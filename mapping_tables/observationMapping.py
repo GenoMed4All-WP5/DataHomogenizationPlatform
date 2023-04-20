@@ -1,25 +1,168 @@
 import math
 
 
-def get_hemoglobin_code(key, value, clinical_and_hematological_data):
-    if value is not None and not math.isnan(value) and value != 'NA':
-        basic_data = {"code":
-            {"coding": [
-                {
-                    "system": "http://loinc.org",
-                    "code": "718-7",
-                    "display": "Hemoglobin [Mass/volume] in Blood"
-                }
-            ]
+def get_ferritin_code(key, value, clinical_data):
+
+    if isinstance(value, (int, float)) and math.isnan(value):
+        return None
+
+    if value is not None and value != 'NA':
+
+        data = {
+            "code": {
+                "coding": [
+                    {
+                        "system": "http://snomed.info/sct",
+                        "code": "489004",
+                        "display": "Ferritin"
+                    },
+                    {
+                        "system": "http://www.ohdsi.org/omop",
+                        "code": "4176561",
+                        "display": "Ferritin"
+                    }
+                ]
             },
             "valueQuantity": {
                 "value": value,
-                "unit": "g/L",
-                "system": "http://unitsofmeasure.org",
-                "code": "g/L"
+                "unit": "ng/ml",
+                "system": "http://unitsofmeasure.org"
             }
         }
 
+        return data
+    else:
+        return None
+
+
+def get_ldh_code(key, value, clinical_data):
+
+    if isinstance(value, (int, float)) and math.isnan(value):
+        return None
+
+    if value is not None and value != 'NA':
+
+        data = {
+                "code": {
+                    "coding": [
+                        {
+                            "system": "http://snomed.info/sct",
+                            "code": "250644007",
+                            "display": "LDH"
+                        },
+                        {
+                            "system": "http://www.ohdsi.org/omop",
+                            "code": "4098519",
+                            "display": "LDH"
+                        }
+                    ]
+                },
+                "valueQuantity": {
+                    "value": value,
+                    "unit": "[U]/L",
+                    "system": "http://unitsofmeasure.org"
+                }
+        }
+
+        return data
+    else:
+        return None
+
+
+def get_platelets_code(key, value, clinical_data):
+    if isinstance(value, (int, float)) and math.isnan(value):
+        return None
+
+    if value is not None and value != 'NA':
+
+        data = {
+            "code": {
+                "coding": [
+                    {
+                        "system": "http://snomed.info/sct",
+                        "code": "365632008",
+                        "display": "Platelets"
+                    },
+                    {
+                        "system": "http://www.ohdsi.org/omop",
+                        "code": "4273307",
+                        "display": "Platelets"
+                    }
+                ]
+            },
+            "valueQuantity": {
+                "value": value,
+                "unit": "10*9/L",
+                "system": "http://unitsofmeasure.org"
+            }
+        }
+
+        return data
+    else:
+        return None
+
+
+def get_neutrophils_code(key, value, clinical_data):
+    if isinstance(value, (int, float)) and math.isnan(value):
+        return None
+
+    if value is not None and value != 'NA':
+
+        data = {
+            "code": {
+                "coding": [
+                    {
+                        "system": "http://snomed.info/sct",
+                        "code": "1022551000000104",
+                        "display": "Neutrophils"
+                    },
+                    {
+                        "system": "http://www.ohdsi.org/omop",
+                        "code": "37393856",
+                        "display": "Neutrophils"
+                    }
+                ]
+            },
+            "valueQuantity": {
+                "value": value,
+                "unit": "10*9/L",
+                "system": "http://unitsofmeasure.org"
+            }
+        }
+
+        return data
+    else:
+        return None
+
+
+def get_hemoglobin_code(key, value, clinical_and_hematological_data):
+    if isinstance(value, (int, float)) and math.isnan(value):
+        return None
+
+    if value is not None and value != 'NA':
+        basic_data = {
+            "code": {
+                "coding": [
+                    {
+                        "system": "http://snomed.info/sct",
+                        "code": "38082009",
+                        "display": "Hemoglobin [Mass/volume] in Blood"
+                    },
+                    {
+                        "system": "http://www.ohdsi.org/omop",
+                        "code": "4244232",
+                        "display": "Hemoglobin [Mass/volume] in Blood"
+                    }
+                ]
+            },
+            "valueQuantity": {
+                "value": value,
+                "unit": "g/dl",
+                "system": "http://unitsofmeasure.org"
+            }
+        }
+
+        '''
         if "Hemoglobin_IPSSR" in clinical_and_hematological_data and clinical_and_hematological_data["Hemoglobin_IPSSR"] is not None and clinical_and_hematological_data["Hemoglobin_IPSSR"] != "NA":
             interpretation = clinical_and_hematological_data["Hemoglobin_IPSSR"]
             interpretation_display = "≥ 10 g/dL" if interpretation == 0 else "8 to 10 g/dL" if interpretation == 1 else "< 8 g/dL"
@@ -34,14 +177,41 @@ def get_hemoglobin_code(key, value, clinical_and_hematological_data):
                     ]
                 }
             ]
+        '''
 
         return basic_data
     else:
         return None
 
 
+def convert_string_to_float(value):
+
+    '''
+    Auxiliary method to read a decimal number containing a comma and convert it into a float variable
+    '''
+
+    if isinstance(value, (int, float)) and math.isnan(value):
+        return 0
+
+    if isinstance(value, str):
+        if ',' in value:
+            try:
+                value = float(value.replace(',', ''))
+                return value
+            except ValueError:
+                print("Error: Unable to convert string to float")
+        else:
+            return float(value)
+
+    return float(value)
+
+
 def get_oncogenetics_code(key, value, oncogenetics_data):
-    if value is not None and not math.isnan(value) and value != 'NA':
+
+    if isinstance(value, (int, float)) and math.isnan(value):
+        return None
+
+    if value is not None and value != 'NA':
 
         '''import requests
 
@@ -51,9 +221,28 @@ def get_oncogenetics_code(key, value, oncogenetics_data):
             url = url + "&term=" + key.split()[0]
 
         response = requests.get(baseurl + url)'''
+        suffix = " " + key.split()[1] if key.split()[1][0] == '(' else ""
 
-        mutation_key = key.split()[0] + " n. mutations"
-        load_key = key.split()[0] + " load"
+        mutation_key = key.split()[0] + suffix + " n. mutations"
+        load_key = key.split()[0] + suffix + " load"
+
+        try:
+            # Attempt to access a key that does not exist
+            mutation_value = oncogenetics_data[mutation_key]
+        except KeyError as e:
+            print("KeyError: {}".format(e))
+            # Handle the KeyError exception here, e.g. provide a default value
+            mutation_value = 0
+
+        try:
+            # Attempt to access a key that does not exist
+            load_value = oncogenetics_data[load_key]
+        except KeyError as e:
+            print("KeyError: {}".format(e))
+            # Handle the KeyError exception here, e.g. provide a default value
+            load_value = 0
+
+        print(f"Mutation key: {mutation_key}, Load key: {load_key}")
 
         extension_data = [{
             "url": "http://hl7.org/fhir/StructureDefinition/observation-geneticsGene",
@@ -81,7 +270,7 @@ def get_oncogenetics_code(key, value, oncogenetics_data):
                     ]
                 },
                 "valueQuantity": {
-                    "value": oncogenetics_data[mutation_key],
+                    "value": convert_string_to_float(mutation_value),
                     "unit": "mutation",
                     "system": "http://unitsofmeasure.org",
                     "code": "mutation"
@@ -98,7 +287,7 @@ def get_oncogenetics_code(key, value, oncogenetics_data):
                     ]
                 },
                 "valueQuantity": {
-                    "value": oncogenetics_data[load_key] if not math.isnan(oncogenetics_data[load_key]) else None,
+                    "value": convert_string_to_float(load_value),
                     "unit": "count",
                     "system": "http://unitsofmeasure.org",
                     "code": "count"

@@ -1,5 +1,5 @@
 from extensions.DataHomogenizationPlatform.mapping_tables.observationMapping import *
-from extensions.DataHomogenizationPlatform.mapping_tables.dataFrame_first10rows_clinical_data_map_columns import mapping
+from extensions.DataHomogenizationPlatform.mapping_tables.mds_mock_data_map_columns import mapping
 
 
 class Observation:

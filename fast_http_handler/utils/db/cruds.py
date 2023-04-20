@@ -9,9 +9,9 @@ log = logger.setup_applevel_logger()
 # ######### TASK #############
 def create_task(db: Session, task: BaseTask, user_id: int, org: int):
     db_item = DBTask(
-        name= task.name,
-        model_name= task.model.name,
-        model_version= task.model.version,
+        name=task.name,
+        model_name=task.model.name,
+        model_version=task.model.version,
         user_id=user_id,
         status="CREATED",
         dataset_ids=task.dataset_ids,
@@ -58,8 +58,6 @@ def get_task_state_by_id(db: Session, task_id: int):
     task = db.query(DBTask).get(task_id)
     return task.status
 
-
-# ######### DATASETS ############
 
 def create_dataset(db: Session, dataset: DatasetSchema):
     node: DBNode = db.query(DBNode).get(dataset.node_id)

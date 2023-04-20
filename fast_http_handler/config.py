@@ -4,7 +4,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 httphandlers = [
     {
-        "class": "extensions.Genomed4All.fast_http_handler.genomed4all_api",
-        "url": "/api/datasets"
-    }
-]
+        "class": "extensions.DataHomogenizationPlatform.fast_http_handler.homogenizationPlatformAPI",
+        "url": "/test/data"
+    }]
+
+

@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from extensions.Genomed4All.fast_http_handler.utils.config import SQLALCHEMY_DATABASE_URL
+from extensions.DataHomogenizationPlatform.fast_http_handler.utils.config import SQLALCHEMY_DATABASE_URL
 
 
 engine = create_engine(
